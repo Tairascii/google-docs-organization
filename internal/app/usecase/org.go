@@ -1,8 +1,12 @@
 package usecase
 
-import "github.com/Tairascii/google-docs-organization/internal/app/service/org"
+import (
+	"context"
+	"github.com/Tairascii/google-docs-organization/internal/app/service/org"
+)
 
 type OrgUseCase interface {
+	CreateOrg(ctx context.Context, orgName string) (string, error)
 }
 
 type UseCase struct {
@@ -11,4 +15,8 @@ type UseCase struct {
 
 func NewOrgUseCase(orgSrv org.OrgService) *UseCase {
 	return &UseCase{org: orgSrv}
+}
+
+func (u *UseCase) CreateOrg(ctx context.Context, orgName string) (string, error) {
+	return u.org.CreateOrg(ctx, orgName)
 }
