@@ -30,3 +30,9 @@ func JSONResponseWriter[T any](w http.ResponseWriter, data T, code int) {
 	}
 	return
 }
+
+func EmptyResponseWriter(w http.ResponseWriter, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	return
+}

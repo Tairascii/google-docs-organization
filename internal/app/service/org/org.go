@@ -19,6 +19,7 @@ const (
 
 type OrgService interface {
 	CreateOrg(ctx context.Context, orgName string) (uuid.UUID, error)
+	AddUser(ctx context.Context, userId, orgId uuid.UUID, role string) error
 }
 
 type Service struct {
@@ -50,4 +51,8 @@ func (s *Service) CreateOrg(ctx context.Context, orgName string) (uuid.UUID, err
 		return uuid.Nil, errors.Join(ErrOnAdd, err)
 	}
 	return id, nil
+}
+
+func (s *Service) AddUser(ctx context.Context, userId, orgId uuid.UUID, role string) error {
+	return s.repo.AddUserToOrg(ctx, userId, orgId, role)
 }

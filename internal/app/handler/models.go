@@ -7,3 +7,9 @@ type CreateOrgPayload struct {
 type CreateOrgResponse struct {
 	ID string `json:"id"`
 }
+
+type AddUserPayload struct {
+	UserId string `json:"userId"`
+	OrgId  string `json:"orgId"`
+	Role   string `json:"role"`
+}
