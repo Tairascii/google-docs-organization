@@ -6,9 +6,12 @@ import (
 	"github.com/Tairascii/google-docs-organization/internal/app/handler"
 	"github.com/Tairascii/google-docs-organization/internal/app/service/org"
 	"github.com/Tairascii/google-docs-organization/internal/app/service/org/repo"
+	"github.com/Tairascii/google-docs-organization/internal/app/service/user"
 	"github.com/Tairascii/google-docs-organization/internal/app/usecase"
 	"github.com/Tairascii/google-docs-organization/internal/db"
 	"github.com/jmoiron/sqlx"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 	"os"
@@ -43,10 +46,19 @@ func main() {
 		}
 	}(sqlxDb)
 
+	//TODO move to env
+	grpcClient, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer grpcClient.Close()
+
 	orgRepo := repo.New(sqlxDb)
 	orgSrv := org.New(orgRepo)
 
-	orgUC := usecase.NewOrgUseCase(orgSrv)
+	usrSrv := user.NewUserService(grpcClient)
+
+	orgUC := usecase.NewOrgUseCase(orgSrv, usrSrv)
 
 	useCase := app.UseCase{Org: orgUC}
 	DI := &app.DI{UseCase: useCase}

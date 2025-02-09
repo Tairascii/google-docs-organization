@@ -107,11 +107,6 @@ func (h *Handler) AddUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	ctx := r.Context()
-	userId, err := uuid.Parse(payload.UserId)
-	if err != nil {
-		pkg.JSONErrorResponseWriter(w, ErrInvalidUserId, http.StatusBadRequest)
-		return
-	}
 
 	orgId, err := uuid.Parse(payload.OrgId)
 	if err != nil {
@@ -119,13 +114,17 @@ func (h *Handler) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.Role == "" {
-		pkg.JSONErrorResponseWriter(w, ErrInvalidOrgId, http.StatusBadRequest)
+	if payload.Role == "" || payload.UserEmail == "" {
+		pkg.JSONErrorResponseWriter(w, ErrInvalidRequest, http.StatusBadRequest)
 		return
 	}
 
-	err = h.DI.UseCase.Org.AddUser(ctx, orgId, userId, payload.Role)
+	err = h.DI.UseCase.Org.AddUser(ctx, orgId, payload.UserEmail, payload.Role)
 	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidUserId) {
+			pkg.JSONErrorResponseWriter(w, ErrInvalidUserId, http.StatusBadRequest)
+			return
+		}
 		pkg.JSONErrorResponseWriter(w, ErrUnexpected, http.StatusInternalServerError)
 		return
 	}
