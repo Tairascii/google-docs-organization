@@ -12,6 +12,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.24.1
 	google.golang.org/grpc v1.70.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

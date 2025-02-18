@@ -1,0 +1,20 @@
+repo:
+  host: localhost
+  port: 5432
+  user: admin
+  password: 12345
+  dbname: google_doc_users
+  schema: google_doc_users_schema
+  app_name: google_doc_users
+  max_idle_conns: 2
+  max_open_conns: 5
+
+server:
+  port: 8080
+  timeout:
+    read: 5s
+    write: 5s
+    idle: 30s
+
+grpc_server:
+  port: 50051

@@ -2,6 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
 	app "github.com/Tairascii/google-docs-organization/internal"
 	"github.com/Tairascii/google-docs-organization/internal/app/handler"
 	"github.com/Tairascii/google-docs-organization/internal/app/service/org"
@@ -12,26 +20,20 @@ import (
 	"github.com/jmoiron/sqlx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func main() {
-	//TODO add envs
+	cfg, err := app.LoadConfigs()
 	dbSettings := db.Settings{
-		Host:          "localhost",
-		Port:          "5432",
-		User:          "admin",
-		Password:      "12345",
-		DbName:        "google_doc_organization",
-		Schema:        "google_doc_organization_schema",
-		AppName:       "google_doc_organization",
-		MaxIdleConns:  2,
-		MaxOpenConns:  5,
+		Host:          cfg.Repo.Host,
+		Port:          cfg.Repo.Port,
+		User:          cfg.Repo.User,
+		Password:      cfg.Repo.Password,
+		DbName:        cfg.Repo.DBName,
+		Schema:        cfg.Repo.Schema,
+		AppName:       cfg.Repo.AppName,
+		MaxIdleConns:  cfg.Repo.MaxIdleConns,
+		MaxOpenConns:  cfg.Repo.MaxOpenConns,
 		MigrateSchema: true,
 	}
 
@@ -46,8 +48,8 @@ func main() {
 		}
 	}(sqlxDb)
 
-	//TODO move to env
-	grpcClient, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcAddr := fmt.Sprintf("%s:%s", cfg.GrpcServer.Host, cfg.GrpcServer.Port)
+	grpcClient, err := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -65,20 +67,20 @@ func main() {
 	handlers := handler.NewHandler(DI)
 
 	srv := &http.Server{
-		Addr:         ":8000", // TODO add .env
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  15 * time.Second,
+		Addr:         cfg.Server.Port,
+		ReadTimeout:  cfg.Server.Timeout.Read,
+		WriteTimeout: cfg.Server.Timeout.Write,
+		IdleTimeout:  cfg.Server.Timeout.Idle,
 		Handler:      handlers.InitHandlers(),
 	}
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil {
+		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Something went wrong while runing server %s", err.Error())
 		}
 	}()
 
-	log.Println("Listening on port 8080")
+	log.Printf("Listening on port: %s", cfg.Server.Port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, os.Interrupt)
